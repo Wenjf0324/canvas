@@ -118,86 +118,153 @@ parcelRequire = (function (modules, cache, entry, globalName) {
 
   return newRequire;
 })({"epB2":[function(require,module,exports) {
-var canvas = document.getElementById("canvas"); //画布的宽高为屏幕的宽高
+var brush = document.getElementById("brush");
+var eraser = document.getElementById("eraser");
+var save = document.getElementById("save");
+var clear = document.getElementById("clear");
+var canvas = document.getElementById("canvas");
+var ctx = canvas.getContext("2d");
+var eraserEnabled = false;
+var painting = false;
+var lastPoint; //设置画布的宽高为屏幕的宽高
 
 canvas.width = document.documentElement.clientWidth;
-canvas.height = document.documentElement.clientHeight;
-var ctx = canvas.getContext("2d");
-ctx.strokeStyle = "none";
-ctx.fillStyle = "black";
-ctx.lineWidth = 3;
-ctx.lineCap = "round"; //选择画笔颜色
+canvas.height = document.documentElement.clientHeight; //检测是否支持触屏
 
-var black = document.querySelector('.black');
-var red = document.querySelector('.red');
-var orange = document.querySelector('.orange');
-var green = document.querySelector('.green');
-var purple = document.querySelector('.purple');
-
-black.onclick = function (e) {
-  ctx.strokeStyle = "black";
-};
-
-red.onclick = function (e) {
-  ctx.strokeStyle = "red";
-};
-
-orange.onclick = function (e) {
-  ctx.strokeStyle = "orange";
-};
-
-green.onclick = function (e) {
-  ctx.strokeStyle = "green";
-};
-
-purple.onclick = function (e) {
-  ctx.strokeStyle = "purple";
-};
-
-var painting = false;
-var last; //上一个坐标点
-//检测是否支持触屏
-
-var isTouchDevice = ("ontouchstart" in document.documentElement); //如果是触屏设备
+var isTouchDevice = ("ontouchstart" in document.documentElement);
 
 if (isTouchDevice) {
-  //获取第0个触碰点
   canvas.ontouchstart = function (e) {
+    //获取第一个触碰点
     var x = e.touches[0].clientX;
     var y = e.touches[0].clientY;
-    last = [x, y]; //第一个last
+
+    if (eraserEnabled) {
+      ctx.clearRect(x - 15, y - 15, 30, 30);
+    }
+
+    lastPoint = [x, y];
   };
 
   canvas.ontouchmove = function (e) {
     var x = e.touches[0].clientX;
     var y = e.touches[0].clientY;
-    drawLine(last[0], last[1], x, y);
-    last = [x, y]; //更新上一次的坐标点
+
+    if (eraserEnabled) {
+      ctx.clearRect(x - 15, y - 15, 30, 30);
+    } else {
+      drawLine(lastPoint[0], lastPoint[1], x, y);
+    }
+
+    lastPoint = [x, y]; //更新上一次的坐标点
   };
 } else {
-  //如果不是触屏设备
   canvas.onmousedown = function (e) {
     painting = true;
-    last = [e.clientX, e.clientY]; //初始化last
+    var x = e.clientX;
+    var y = e.clientY;
+
+    if (eraserEnabled) {
+      ctx.clearRect(x - 15, y - 15, 30, 30);
+    }
+
+    lastPoint = [x, y]; //初始化lastPoint
   };
 
   canvas.onmousemove = function (e) {
-    if (painting === true) {
-      drawLine(last[0], last[1], e.clientX, e.clientY);
-      last = [e.clientX, e.clientY]; //更新上一次的坐标点
+    var x = e.clientX;
+    var y = e.clientY;
+
+    if (painting) {
+      if (eraserEnabled) {
+        ctx.clearRect(x - 15, y - 15, 30, 30);
+      } else {
+        drawLine(lastPoint[0], lastPoint[1], x, y);
+      }
+
+      lastPoint = [x, y]; //更新上一次的坐标点
     }
   };
 
   canvas.onmouseup = function () {
     painting = false;
   };
-}
+} //画线函数
+
 
 function drawLine(x1, y1, x2, y2) {
+  ctx.lineWidth = 3;
+  ctx.lineCap = "round";
   ctx.beginPath();
   ctx.moveTo(x1, y1);
   ctx.lineTo(x2, y2);
   ctx.stroke();
+} //点击画笔
+
+
+brush.onclick = function () {
+  eraserEnabled = false;
+  brush.classList.add("active");
+  eraser.classList.remove("active");
+}; //点击橡皮擦
+
+
+eraser.onclick = function () {
+  eraserEnabled = true;
+  eraser.classList.add("active");
+  brush.classList.remove("active");
+}; //点击保存
+
+
+save.onclick = function () {
+  var imgUrl = canvas.toDataURL("image/png");
+  var a = document.createElement("a");
+  document.body.appendChild(a);
+  a.href = imgUrl;
+  a.download = "mypic" + new Date().getTime();
+  a.target = "_blank";
+  a.click();
+}; //点击清屏
+
+
+clear.onclick = function () {
+  ctx.fillStyle = "#cdedba";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+}; //选择画笔颜色
+
+
+var events = {
+  ".black": "black",
+  ".red": "red",
+  ".yellow": "yellow",
+  ".green": "green",
+  ".blue": "blue"
+};
+
+function selectColor() {
+  var _loop = function _loop(key) {
+    if (events.hasOwnProperty(key)) {
+      document.querySelector(key).onclick = function () {
+        eraserEnabled = false;
+        ctx.strokeStyle = events[key];
+        brush.classList.add("active");
+        eraser.classList.remove("active");
+        var colorList = this.parentNode.children;
+
+        for (var i = 0; i < colorList.length; i++) {
+          colorList[i].classList.remove("selected");
+        }
+
+        this.classList.add("selected");
+      };
+    }
+  };
+
+  for (var key in events) {
+    _loop(key);
+  }
 }
+
+selectColor();
 },{}]},{},["epB2"], null)
-//# sourceMappingURL=main.9226d238.js.map
+//# sourceMappingURL=main.d61f456a.js.map
